@@ -10,10 +10,10 @@ DS3231 rtc;
 RTCDateTime Cas;
 /*################# konfigurace  ############*/
 
-int letoZapniHodina = 18;
+int letoZapniHodina = 16;//17
 int letoZapniMinuta = 30;
-int letoVypniHodina = 6;
-int letoVypniMinuta = 0;
+int letoVypniHodina = 6; //6
+int letoVypniMinuta = 0;//0
 
 
 
@@ -41,7 +41,7 @@ int zimaMesic = 10;
 #define modra 8   //letni rezim
 
 #define prepinac 5
-#define rychlost 20
+#define rychlost 5
 
 void setup() {
   swSerial.begin(9600);
@@ -79,6 +79,14 @@ void setup() {
 
 void loop() {
   Cas = rtc.getDateTime();
+    Serial.print("Raw data: ");
+  Serial.print(Cas.year);   Serial.print("-");
+  Serial.print(Cas.month);  Serial.print("-");
+  Serial.print(Cas.day);    Serial.print(" ");
+  Serial.print(Cas.hour);   Serial.print(":");
+  Serial.print(Cas.minute); Serial.print(":");
+  Serial.print(Cas.second); Serial.println("");
+/*
 if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
   if ( ((Cas.month >= letoMesic + 1 && Cas.month <= zimaMesic - 1) || (Cas.month == letoMesic && Cas.day >= letoDen) || (Cas.month == zimaMesic && Cas.day <= zimaDen))  ) { //leto nebo je zvoleno leto na prepinaci
     digitalWrite(modra, HIGH);
@@ -90,11 +98,32 @@ if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
     }
   }
   else{ //zima
-    digitalWrite(modra, LOW);
     zapni();
   }
 
 }else{
+  
+  digitalWrite(modra, LOW);
+  zapni();
+}
+*/
+if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
+  if ( ((Cas.month == letoMesic && Cas.day >= letoDen) || (Cas.month > letoMesic && Cas.month < zimaMesic) || (Cas.month == zimaMesic && Cas.day <= zimaDen))  ) { //leto nebo je zvoleno leto na prepinaci
+    digitalWrite(modra, HIGH);
+    if( (Cas.hour == letoZapniHodina && Cas.minute >= letozapniMinuta) || (Cas.hour > letoZapniHodina || Cas.hour < letoVypniHodina) || (Cas.hour == letoVypniHodina && Cas.minute <= letoVypniMinuta) ){
+      zapni();
+    }
+    else{  //vypnuti ve dne
+      vypni();
+    }
+  }
+  else{ //zima
+    zapni();
+  }
+
+}else{
+  
+  digitalWrite(modra, LOW);
   zapni();
 }
 
@@ -119,6 +148,7 @@ if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
   }
   // pokud proběhl příjem nových dat, vytiskneme všechny dostupné informace
   if (novaData) {
+    digitalWrite(zelena, HIGH);
     // vytvoření dočasných proměnných pro načtení dat z GPS modulu
     float zSirka, zDelka;
     unsigned long stariDat;
@@ -155,6 +185,10 @@ if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
       if (hodina == 0 && minuta == 0 && (den % 2 == 0)) { //každou půlnoc , každý sudý den
         rtc.setDateTime(rok, mesic, den, hodina, minuta, sekunda);
         Serial.println("cas synchronizovan");
+        Serial.print("cas: ");
+        Serial.print(Cas.hour);
+        Serial.print(" : ");
+        Serial.println(Cas.minute);
 
       }
       sprintf(datumCas, "%02d/%02d/%02d %02d:%02d:%02d", mesic, den, rok, hodina, minuta, sekunda);
@@ -165,6 +199,7 @@ if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
   gps.stats(&znaky, &slova, &chyby);
   Serial.print("chyby pri kontrole dat: ");
   Serial.println(chyby);
+  digitalWrite(zelena, !chyby);
   // kontrola chyb při komunikaci skrze detekci přijatých znaků
   if (znaky == 0) {
     Serial.println("Chyba pri prijmu dat z GPS, zkontrolujte zapojeni!");
