@@ -121,7 +121,7 @@ if( !digitalRead(prepinac) ){ //kod bezi pri zapnuti auto
     zapni();
   }
 
-}else{
+}else{  //manualni rezim still on
   
   digitalWrite(modra, LOW);
   zapni();
